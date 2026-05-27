@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "name": "Roman sword",
+    "description": "Training and strategy manual of the Roman legions.",
+    "price_credit": 25,
+    "image_url": "almanac.jpg",
+    "era": "Ancient"
+  },
+  {
+    "id": 2,
+    "name": "magna carta",
+    "description": "Armor and battlefield formations.",
+    "price_credit": 30,
+    "image_url": "magnaCarta.png",
+    "era": "Medieval"
+  }
+]

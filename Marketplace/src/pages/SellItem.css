@@ -1,0 +1,98 @@
+.sell-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2.5rem 3rem;
+  background: linear-gradient(135deg, #1b1f3a, #0d0f1c);
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 191, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+  color: black;
+}
+
+.sell-container::before {
+  content: "";
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(0,191,255,0.35), transparent 70%);
+  filter: blur(120px);
+  top: -100px;
+  left: -100px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.sellTitle {
+    font-size: 4rem;
+    color:aqua;
+    margin: 15% 0 0 5%;
+}
+
+.addItemForm {
+    
+    margin-top: 5vh;
+    align-items:end;
+}
+
+.sellItem {
+display: flex; 
+height: 100vh;
+background: radial-gradient(circle at 20% 30%, #112134, #0d0f1c 60%);
+
+overflow: hidden;
+text-align:center;
+}
+
+.uploadImage {
+    background-color: #fff;
+    width: 100%;
+    text-align:center;
+    align-items:center;
+}
+
+.uploadImage:hover {
+    cursor: pointer;
+}
+
+.sellItem::before {
+    content: "";
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0,191,255,0.4), transparent 70%);
+  filter: blur(120px);
+  z-index: 0;
+  pointer-events: none;
+  
+}
+
+.sellItem input {
+    
+    text-align:center;
+    align-items:end;
+    width: 60%;
+    height: 40px;
+    margin: 30px 0;
+}
+
+input:focus {
+    border-color: #00bfff;
+  box-shadow: 0 0 10px #00bfff;
+}
+
+input::placeholder {
+    color: #2800a1;
+}
+
+.eraInput {
+    width: 60%;
+    height: 40px;
+    text-align:center;
+}
+
+.sellButton {
+    background-color:aqua;
+    margin: 2rem 5rem 3rem 3rem;
+    padding: 2% 3%;
+}

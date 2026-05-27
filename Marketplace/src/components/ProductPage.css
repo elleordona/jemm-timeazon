@@ -1,0 +1,146 @@
+.productPageElements {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+
+  max-width: 1200px;
+  margin: 80px auto;
+  padding: 50px;
+
+  background: rgba(15, 15, 26, 0.9);
+  backdrop-filter: blur(12px);
+
+  border-radius: 20px;
+  border: 1px solid rgba(0, 247, 255, 0.15);
+  box-shadow: 0 0 40px rgba(0, 247, 255, 0.05);
+}
+
+
+.productPageBackButton {
+  position: absolute;
+  top: 25px;
+  left: 30px;
+
+  font-size: 14px;
+  padding: 6px 12px;
+
+  background: transparent;
+  border: 1px solid rgba(0, 247, 255, 0.4);
+  color: #00f7ff;
+
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.productPageBackButton:hover {
+  background: rgba(0, 247, 255, 0.1);
+  border-color: #00f7ff;
+}
+
+
+
+.pageImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.productPageImage {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+
+  box-shadow: 0 0 30px rgba(255, 0, 200, 0.15);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.productPageImage:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 40px rgba(255, 0, 200, 0.35);
+}
+
+
+
+.productDetails {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.productDetails h2 {
+  font-size: 32px;
+  margin-bottom: 20px;
+  color: #00f7ff;
+  letter-spacing: 1px;
+}
+
+.productDetails p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #cccccc;
+  margin-bottom: 30px;
+}
+
+.productDetails h3 {
+  font-size: 26px;
+  margin-bottom: 30px;
+  color: #ff00c8;
+}
+
+
+.addToCartButton {
+  padding: 14px 28px;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+
+  border-radius: 8px;
+  border: 1px solid #00f7ff;
+
+  background: transparent;
+  color: #00f7ff;
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.addToCartButton:hover {
+  background: #00f7ff;
+  color: #0f0f1a;
+  box-shadow: 0 0 20px #00f7ff;
+}
+
+.addToCartButton:disabled {
+  border-color: #444;
+  color: #444;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
+
+@media (max-width: 900px) {
+  .productPageElements {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 30px;
+  }
+
+  .productPageBackButton {
+    position: relative;
+    top: 0;
+    left: 0;
+    margin-bottom: 20px;
+  }
+
+  .productDetails h2 {
+    font-size: 26px;
+  }
+
+  .productDetails h3 {
+    font-size: 22px;
+  }
+}

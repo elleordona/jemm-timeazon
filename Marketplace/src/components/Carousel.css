@@ -1,0 +1,57 @@
+.carousel-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.scroll-container {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  gap: 5px;
+  width: 100%;
+}
+
+.scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-item {
+  max-width: 350px;
+  height: 450px;
+  background: lightgray;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow:hidden;
+  flex-shrink: 0;
+  transition: all 0.25s ease-in-out;
+ 
+}
+
+.scroll-btn {
+  background: black;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.scroll-btn:hover {
+  background: #333;
+}
+
+.scroll-container img {
+  min-height: 450px;
+  max-height: 550px;
+  min-width: 380px;
+  max-width: 450px;
+}
+
+.scroll-item:hover {
+  transform:scale(0.99);
+  cursor:pointer;
+  transition: all 0.25s ease-in-out;
+}
