@@ -10,6 +10,11 @@ if (!stackName || !stackName.trim()) {
   process.exit(1)
 }
 
+if (!['dev', 'prod'].includes(environmentName)) {
+  console.error(`APP_ENV must be either 'dev or 'prod'`)
+  process.exit(1)
+}
+
 const settings = {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT || 'NOT_SET',
@@ -22,19 +27,37 @@ const settings = {
   subDomain: stackName.toLowerCase(),
   dbName: 'dev',
   vpcName: 'CTASharedVPC-vpc',
+  devWebAclArn: 'arn:aws:wafv2:us-east-1:827602716979:global/webacl/JEMM-timeazon-dev-waf/89ef8a72-3779-43c4-8428-6d933fbed647',
   environmentName
 }
 
 const app = new cdk.App();
-new CdkStack(app, 'CdkStack', {
-  env: settings.env,
-  permissionsBoundaryPolicyName: settings.permissionsBoundaryPolicyName,
-  subDomain: settings.subDomain,
-  stackName: settings.stackName,
-  certArn: settings.certArn,
-  domainName: settings.domainName,
-  dbName: settings.dbName,
-  vpcName: settings.vpcName,
-  environmentName
-});
+if (environmentName === 'dev') {
+  new CdkStack(app, 'CdkStackDev', {
+    env: settings.env,
+    permissionsBoundaryPolicyName: settings.permissionsBoundaryPolicyName,
+    subDomain: settings.subDomain,
+    stackName: `${stackName}-dev`,
+    certArn: settings.certArn,
+    domainName: settings.domainName,
+    dbName: settings.dbName,
+    vpcName: settings.vpcName,
+    devWebAclArn: settings.devWebAclArn,
+    environmentName: 'dev'
+  });
+}
 
+if (environmentName === 'prod') {
+  new CdkStack(app, 'CdkStackProd', {
+    env: settings.env,
+    permissionsBoundaryPolicyName: settings.permissionsBoundaryPolicyName,
+    subDomain: settings.subDomain,
+    stackName: `${stackName}-prod`,
+    certArn: settings.certArn,
+    domainName: settings.domainName,
+    dbName: settings.dbName,
+    vpcName: settings.vpcName,
+    devWebAclArn: undefined,
+    environmentName: 'prod'
+  });
+}
