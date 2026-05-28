@@ -1,5 +1,6 @@
 {
   "app": "node --enable-source-maps bin/cdk.js",
+  "profile": "student",
   "watch": {
     "include": [
       "**"
