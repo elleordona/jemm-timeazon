@@ -23,30 +23,51 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+/**
+ * @typedef {import('aws-cdk-lib').StackProps & {
+ *  stackName: string,
+ *  subDomain:string,
+ *  domainName: string,
+ *  permissionsBoundaryPolicyName: string,
+ *  vpcName: string,
+ *  dbName: string,
+ *  certArn: string,
+ *  environmentName: 'dev' | 'prod'
+ * }} CdkStackProps
+ */
 
 export class CdkStack extends Stack {
+  /**
+   *
+   * @param {Construct} scope
+   * @param {string} id
+   * @param {CdkStackProps} props
+   */
   constructor(scope, id, props) {
     super(scope, id, props);
+    const isDev = props.environmentName === 'dev'
+    const isProd = props.environmentName === 'prod'
 
     // ----------------------------------
     // Domains
     // ----------------------------------
-    const fullDomain = `${props.subDomain}.${props.domainName}`
-    const staticImagesInS3Domain = `static-images-${props.subDomain}.${props.domainName}`
+    const fullDomain = isProd ? `${props.subDomain}.${props.domainName}` : `${props.subDomain}-dev.${props.domainName}`
+    const staticImagesInS3Domain = isProd ? `static-images-${props.subDomain}.${props.domainName}` : `static-images-${props.subDomain}-dev.${props.domainName}`
 
     // ----------------------------------
     // Tags
     // ----------------------------------
     cdk.Tags.of(this).add('Owner', props.stackName)
     cdk.Tags.of(this).add('Project', 'timeazon')
-    
+    cdk.Tags.of(this).add('Environment', props.environmentName)
+
     // ----------------------------------
     // Permissions boundary
     // ----------------------------------
     const boundary = iam.ManagedPolicy.fromManagedPolicyName(this, 'Boundary', props.permissionsBoundaryPolicyName)
-    
+
     iam.PermissionsBoundary.of(this).apply(boundary)
-    
+
 
     // ----------------------------------
     // Networking
@@ -58,9 +79,9 @@ export class CdkStack extends Stack {
       vpcName: props.vpcName,
       region: props.env.region
     })
-    
+
     // ----------------------------------
-    // Databases - ONLY UNCOMMENT THIS WHEN YOU ARE READY TO ADD A DATABASE / YOUR APPICATION IS SET UP TO UTILISE A DATABASE AS IT'S CRAZY EXPENSIVE 
+    // Databases - ONLY UNCOMMENT THIS WHEN YOU ARE READY TO ADD A DATABASE / YOUR APPICATION IS SET UP TO UTILISE A DATABASE AS IT'S CRAZY EXPENSIVE
     // ----------------------------------
 
     // Choose the Aurora Postgres engine version
@@ -75,7 +96,7 @@ export class CdkStack extends Stack {
       this,
       'postgres-parameter-group',
       {
-        name: `${props.subDomain}-ParameterGroup`,
+        name: `${props.subDomain}-${props.environmentName}-ParameterGroup`,
         engine: postgresEngine,
         description: `${props.subDomain} parameter group with SSL enforced`,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -97,15 +118,15 @@ export class CdkStack extends Stack {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_ISOLATED
       },
-    
+
       // Aurora Serverless v2 configuration
       writer: rds.ClusterInstance.serverlessV2('writer'),
       serverlessV2MinCapacity: 0.5,
       serverlessV2MaxCapacity: 1,
-    
+
       // Needed for the Data API from our Lambdas
       enableDataApi: true,
-    
+
       // Tear the database down with the stack (fine for a lab, not for prod)
       removalPolicy: cdk.RemovalPolicy.DESTROY
     })
@@ -116,7 +137,7 @@ export class CdkStack extends Stack {
 
     // Users table (one row per user)
     const usersTable = new dynamodb.Table(this, 'users-table', {
-      tableName: `${props.subDomain}-users`,
+      tableName: `${props.subDomain}-${props.environmentName}-users`,
       partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY
@@ -124,7 +145,7 @@ export class CdkStack extends Stack {
 
     // Cart table (many items per user)
     const cartTable = new dynamodb.Table(this, 'cart-table', {
-      tableName: `${props.subDomain}-cart`,
+      tableName: `${props.subDomain}-${props.environmentName}-cart`,
       partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'productId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -136,7 +157,7 @@ export class CdkStack extends Stack {
     // ----------------------------------
 
     const staticImagesBucket = new s3.Bucket(this, 'static-images', {
-      bucketName: `${props.subDomain}-static-images`,
+      bucketName: `${props.subDomain}-${props.environmentName}-static-images`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       publicReadAccess: true,
@@ -164,7 +185,7 @@ export class CdkStack extends Stack {
     })
 
     const clientBucket = new s3.Bucket(this, 'client-bucket', {
-      bucketName: `${props.subDomain}-client-bucket`,
+      bucketName: `${props.subDomain}-${props.environmentName}-client-bucket`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       publicReadAccess: false,
@@ -201,13 +222,13 @@ export class CdkStack extends Stack {
         principals: [new iam.AnyPrincipal()]
       })
     )
-    
+
     // ----------------------------------
     // Certificate
     // ----------------------------------
 
     const cert = acm.Certificate.fromCertificateArn(this,
-      'BakehouseCert', //Don't change this i only made one cert 
+      'BakehouseCert', //Don't change this i only made one cert
       props.certArn
     )
 
@@ -216,14 +237,14 @@ export class CdkStack extends Stack {
     // ----------------------------------
 
     const redirectsFunction = new cloudfront.Function(this, 'redirects-function', {
-      functionName: `${props.subDomain}-redirects`,
+      functionName: `${props.subDomain}-${props.environmentName}-redirects`,
       code: cloudfront.FunctionCode.fromFile({
         filePath: 'functions/redirects.js'
       })
     })
 
-    const clientQueryPolicy = new cloudfront.OriginRequestPolicy(this,'client-query-policy',{
-      originRequestPolicyName: `${props.subDomain}-client-query-policy`,
+    const clientQueryPolicy = new cloudfront.OriginRequestPolicy(this, 'client-query-policy', {
+      originRequestPolicyName: `${props.subDomain}-${props.environmentName}-client-query-policy`,
       queryStringBehavior:
         cloudfront.OriginRequestQueryStringBehavior.all()
     })
@@ -235,20 +256,20 @@ export class CdkStack extends Stack {
     const lambdaEnvVars = {
       NODE_ENV: 'production',
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
-    
+
       // Aurora
       DB_NAME: props.dbName,
       CLUSTER_ARN: cluster.clusterArn,
       SECRET_ARN: cluster.secret?.secretArn || 'NOT_SET',
-    
+
       // Static assets
       STATIC_IMAGES_BUCKET: staticImagesBucket.bucketName,
       STATIC_IMAGES_BASE_URL: `https://${staticImagesInS3Domain}`,
-    
+
       // DynamoDB – users
       DYNAMO_TABLE_NAME: usersTable.tableName,
       DYNAMO_REGION: cdk.Stack.of(this).region,
-    
+
       // DynamoDB – cart
       CART_TABLE_NAME: cartTable.tableName
     }
@@ -258,40 +279,40 @@ export class CdkStack extends Stack {
     // ----------------------------------
 
     const bootstrapLambda = new lambda.Function(this, 'bootstrap-lambda', {
-      functionName: `${props.subDomain}-bootstrap-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-bootstrap-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'utility-functions.bootstrapHandler',
       code: lambda.Code.fromAsset('functions'),
       environment: lambdaEnvVars
     })
-  
+
     const healthcheckLambda = new lambda.Function(this, 'health-check-lambda', {
-      functionName: `${props.subDomain}-health-check-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-health-check-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'health-check.healthcheckHandler',
       code: lambda.Code.fromAsset('functions'),
       environment: lambdaEnvVars
     })
 
-     const postProductLambda = new lambda.Function(this, 'post-product-lambda', {
-      functionName: `${props.subDomain}-post-product-lambda`,
+    const postProductLambda = new lambda.Function(this, 'post-product-lambda', {
+      functionName: `${props.subDomain}-${props.environmentName}-post-product-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'utility-functions.postProductHandler',
       code: lambda.Code.fromAsset('functions'),
       environment: lambdaEnvVars
-     })
-    
-     const deleteProductLambda = new lambda.Function(this, 'delete-product-lambda', {
-      functionName: `${props.subDomain}-delete-product-lambda`,
+    })
+
+    const deleteProductLambda = new lambda.Function(this, 'delete-product-lambda', {
+      functionName: `${props.subDomain}-${props.environmentName}-delete-product-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'utility-functions.deleteProductHandler',
       code: lambda.Code.fromAsset('functions'),
       environment: lambdaEnvVars
-     })
+    })
 
     // product catalogue
     const productCatalogLambda = new lambda.Function(this, 'product-catalog-lambda', {
-      functionName: `${props.subDomain}-product-catalog-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-product-catalog-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'utility-functions.productCatalogHandler',
       code: lambda.Code.fromAsset('functions'),
@@ -300,18 +321,18 @@ export class CdkStack extends Stack {
         FEATURED_PRODUCT: ''
       }
     })
-    
+
     // Grant Lambdas that need it access to the Aurora Data API
-    
+
     cluster.grantDataApiAccess(productCatalogLambda)
     cluster.grantDataApiAccess(postProductLambda)
     cluster.grantDataApiAccess(bootstrapLambda)
     cluster.grantDataApiAccess(deleteProductLambda)
-    
+
     // Sign up, log in and add to cart lambdas that will use DynamoDB
     // sign up
     const postUsersLambda = new lambda.Function(this, 'post-users-lambda', {
-      functionName: `${props.subDomain}-post-users-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-post-users-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'users.postUsersHandler',
       code: lambda.Code.fromAsset('functions'),
@@ -320,7 +341,7 @@ export class CdkStack extends Stack {
 
     // log in
     const loginLambda = new lambda.Function(this, 'login-lambda', {
-      functionName: `${props.subDomain}-login-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-login-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'users.loginHandler',
       code: lambda.Code.fromAsset('functions'),
@@ -328,7 +349,7 @@ export class CdkStack extends Stack {
     })
 
     const postToCartLambda = new lambda.Function(this, "post-tocart-lambda", {
-      functionName: `${props.subDomain}-post-tocart-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-post-tocart-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: "addToCart.postToCartHandler",
       code: lambda.Code.fromAsset('functions'),
@@ -336,7 +357,7 @@ export class CdkStack extends Stack {
     });
 
     const getToCartLambda = new lambda.Function(this, "get-tocart-lambda", {
-      functionName: `${props.subDomain}-get-tocart-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-get-tocart-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: "addToCart.getToCartHandler",
       code: lambda.Code.fromAsset('functions'),
@@ -344,7 +365,7 @@ export class CdkStack extends Stack {
     });
 
     const deleteFromCartLambda = new lambda.Function(this, "delete-fromcart-lambda", {
-      functionName: `${props.subDomain}-delete-fromcart-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-delete-fromcart-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: "addToCart.deleteFromCartHandler",
       code: lambda.Code.fromAsset('functions'),
@@ -361,10 +382,10 @@ export class CdkStack extends Stack {
     cartTable.grantReadWriteData(getToCartLambda)
     cartTable.grantReadWriteData(deleteFromCartLambda)
 
-    // S3 lambda images 
+    // S3 lambda images
     // New Lambda to create pre signed upload urls
     const getImageUploadUrlLambda = new lambda.Function(this, 'get-image-upload-url-lambda', {
-      functionName: `${props.subDomain}-get-image-upload-url-lambda`,
+      functionName: `${props.subDomain}-${props.environmentName}-get-image-upload-url-lambda`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'utility-functions.getImageUploadUrlHandler',
       code: lambda.Code.fromAsset('functions'),
@@ -378,7 +399,7 @@ export class CdkStack extends Stack {
     // API Gateway
     // ----------------------------------
     const api = new apigw.RestApi(this, 'apigw', {
-      restApiName: `${props.subDomain}-api`,
+      restApiName: `${props.subDomain}-${props.environmentName}-api`,
       description: `${props.subDomain} api gateway`,
       deploy: true,
       deployOptions: {
@@ -409,7 +430,7 @@ export class CdkStack extends Stack {
     const healthchckApi = api.root.addResource('healthcheck')
     // Allow `/api/healthcheck` to receive GET requests, and tell it which lambder to trigger whn it does
     healthchckApi.addMethod('GET', new apigw.LambdaIntegration(healthcheckLambda))
-    
+
     const productsApi = api.root.addResource('products')
     productsApi.addMethod('GET', new apigw.LambdaIntegration(productCatalogLambda))
     productsApi.addMethod('POST', new apigw.LambdaIntegration(postProductLambda))
@@ -490,7 +511,7 @@ export class CdkStack extends Stack {
       distributionPaths: ['/*']
     })
 
-    const staticImagesDistribution = new cloudfront.Distribution(this,'static-images-distribution',{
+    const staticImagesDistribution = new cloudfront.Distribution(this, 'static-images-distribution', {
       defaultBehavior: {
         origin: new origins.S3BucketOrigin(staticImagesBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -546,7 +567,7 @@ export class CdkStack extends Stack {
     )
 
     // --------------------------------------------------
-    // OUTPUTS INTO THE CONSOLE 
+    // OUTPUTS INTO THE CONSOLE
     // --------------------------------------------------
 
     // --------------------------------------------------
@@ -582,7 +603,7 @@ export class CdkStack extends Stack {
       value: `https://${api.restApiId}.execute-api.${props.env.region}.amazonaws.com/api/products`
     })
 
-    
+
     // --------------------------------------------------
     // 03 – CloudFront (Debugging + invalidations)
     // --------------------------------------------------
@@ -631,7 +652,7 @@ export class CdkStack extends Stack {
     // COMMENT THIS SECTION OUT UNTIL AURORA IS ENABLED
     // --------------------------------------------------
 
-    
+
     new cdk.CfnOutput(this, "06_Database_ClusterArn", {
       value: cluster.clusterArn
     })
@@ -647,7 +668,7 @@ export class CdkStack extends Stack {
     new cdk.CfnOutput(this, "06_Database_SecretArn", {
       value: cluster.secret?.secretArn || "NOT_SET"
     })
-    
+
 
   }
 }
