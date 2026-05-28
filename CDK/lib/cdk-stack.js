@@ -32,7 +32,8 @@ const __dirname = path.dirname(__filename)
  *  vpcName: string,
  *  dbName: string,
  *  certArn: string,
- *  environmentName: 'dev' | 'prod'
+ *  environmentName: 'dev' | 'prod',
+ *  devWebAclArn?: string,
  * }} CdkStackProps
  */
 
@@ -495,7 +496,8 @@ export class CdkStack extends Stack {
       defaultRootObject: 'index.html',
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       domainNames: [fullDomain],
-      certificate: cert
+      certificate: cert,
+      webAclId: props.devWebAclArn
     })
 
     new s3Deployment.BucketDeployment(this, 'client-deployment', {
@@ -524,7 +526,8 @@ export class CdkStack extends Stack {
       },
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       domainNames: [staticImagesInS3Domain],
-      certificate: cert
+      certificate: cert,
+      webAclId: props.devWebAclArn
     })
 
     new s3Deployment.BucketDeployment(this, 'static-images-deployment', {
