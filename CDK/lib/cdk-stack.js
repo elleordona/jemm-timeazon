@@ -171,8 +171,7 @@ export class CdkStack extends Stack {
       }),
       cors: [
         {
-          // for training, keep it simple – allow everything
-          allowedOrigins: ["*"],
+          allowedOrigins: [`https://${fullDomain}`],
           allowedMethods: [
             s3.HttpMethods.GET,
             s3.HttpMethods.PUT,
@@ -409,13 +408,11 @@ export class CdkStack extends Stack {
       defaultCorsPreflightOptions: {
         allowHeaders: [
           'Content-Type',
-          'Access-Control-Allow-Origin',
-          'Access-Control-Request-Method',
-          'Access-Control-Request-Headers'
+          'Authorization'
         ],
-        allowMethods: ['*'],
-        allowOrigins: ['*'],
-        allowCredentials: true
+        allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+        allowOrigins: [`https://${fullDomain}`],
+        allowCredentials: false
       }
     })
 
@@ -675,4 +672,5 @@ export class CdkStack extends Stack {
 
   }
 }
+
 
