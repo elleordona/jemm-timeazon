@@ -11,10 +11,10 @@ export default function Carousel() {
     } else {
       current.scrollBy({ left: 300, behavior: "smooth" });
     }
-
-
   };
-const s3domain = "https://timeazon-static-images.s3.eu-west-2.amazonaws.com";
+
+const s3domain = import.meta.env.VITE_STATIC_IMAGES_DOMAIN;
+
 
 const imageUrl1 = `${s3domain}/toasterShoe.jpg`;
 const imageUrl2 = `${s3domain}/HeroditusSandals.png`;
