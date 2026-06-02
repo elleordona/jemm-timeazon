@@ -189,7 +189,7 @@ export class CdkStack extends Stack {
       cors: [
         {
           // for training, keep it simple – allow everything
-          allowedOrigins: ["*"],
+          allowedOrigins: [`https://${fullDomain}`],
           allowedMethods: [
             s3.HttpMethods.GET,
             s3.HttpMethods.PUT,
@@ -467,32 +467,16 @@ export class CdkStack extends Stack {
       deploy: true,
       deployOptions: {
         stageName: 'api',
-        accessLogDestination: new apigw.LogGroupLogDestination(apiAccessLogGroup),
-        accessLogFormat: apigw.AccessLogFormat.jsonWithStandardFields({
-          caller: true,
-          httpMethod: true,
-          ip: true,
-          protocol: true,
-          requestTime: true,
-          resourcePath: true,
-          responseLength: true,
-          status: true,
-          user: true
-        }),
-        loggingLevel: apigw.MethodLoggingLevel.INFO,
         metricsEnabled: true,
         tracingEnabled: true
       },
       defaultCorsPreflightOptions: {
         allowHeaders: [
           'Content-Type',
-          'Access-Control-Allow-Origin',
-          'Access-Control-Request-Method',
-          'Access-Control-Request-Headers'
+          'Authorization'
         ],
-        allowMethods: ['*'],
-        allowOrigins: ['*'],
-        allowCredentials: true
+        allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+        allowOrigins: [`https://${fullDomain}`]
       }
     })
 
