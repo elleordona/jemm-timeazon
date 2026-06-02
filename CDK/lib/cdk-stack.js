@@ -158,6 +158,21 @@ export class CdkStack extends Stack {
     // S3 buckets
     // ----------------------------------
 
+    const cloudFrontLogsBucket = new s3.Bucket(this, 'cloudfront-logs-bucket', {
+      bucketName: `${props.subDomain}-${props.environmentName}-cloudfront-logs`,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      enforceSSL: true,
+      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: isDev,
+      lifecycleRules: [
+        {
+          expiration: isProd ? cdk.Duration.days(180) : cdk.Duration.days(30)
+        }
+      ]
+    })
+
     const staticImagesBucket = new s3.Bucket(this, 'static-images', {
       bucketName: `${props.subDomain}-${props.environmentName}-static-images`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -516,6 +531,9 @@ export class CdkStack extends Stack {
         }
       ],
       defaultRootObject: 'index.html',
+      enableLogging: true,
+      logBucket: cloudFrontLogsBucket,
+      logFilePrefix: `${props.environmentName}/client/`,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       domainNames: [fullDomain],
       certificate: cert,
@@ -546,6 +564,9 @@ export class CdkStack extends Stack {
           }
         ]
       },
+      enableLogging: true,
+      logBucket: cloudFrontLogsBucket,
+      logFilePrefix: `${props.environmentName}/static-images/`,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       domainNames: [staticImagesInS3Domain],
       certificate: cert,
