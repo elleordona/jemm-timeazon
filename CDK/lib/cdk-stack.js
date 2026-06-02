@@ -191,7 +191,6 @@ export class CdkStack extends Stack {
 			autoDeleteObjects: true,
 			publicReadAccess: false,
 			encryption: s3.BucketEncryption.S3_MANAGED,
-			websiteIndexDocument: "index.html",
 			blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 		})
 
