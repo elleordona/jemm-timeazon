@@ -188,7 +188,6 @@ export class CdkStack extends Stack {
       }),
       cors: [
         {
-          // for training, keep it simple – allow everything
           allowedOrigins: [`https://${fullDomain}`],
           allowedMethods: [
             s3.HttpMethods.GET,
@@ -476,7 +475,8 @@ export class CdkStack extends Stack {
           'Authorization'
         ],
         allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-        allowOrigins: [`https://${fullDomain}`]
+        allowOrigins: [`https://${fullDomain}`],
+        allowCredentials: false
       }
     })
 
@@ -754,4 +754,5 @@ export class CdkStack extends Stack {
 
   }
 }
+
 
