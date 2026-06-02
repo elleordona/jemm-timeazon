@@ -195,6 +195,18 @@ export class CdkStack extends Stack {
 			blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 		})
 
+		clientBucket.addToResourcePolicy(
+			new iam.PolicyStatement({
+				effect: iam.Effect.DENY,
+				actions: ["s3:*"],
+				resources: [clientBucket.bucketArn, clientBucket.arnForObjects("*")],
+				conditions: {
+					Bool: { "aws:SecureTransport": "false" },
+				},
+				principals: [new iam.AnyPrincipal()],
+			}),
+		)
+
 		staticImagesBucket.addToResourcePolicy(
 			new iam.PolicyStatement({
 				effect: iam.Effect.DENY,
@@ -203,18 +215,6 @@ export class CdkStack extends Stack {
 					staticImagesBucket.bucketArn,
 					staticImagesBucket.arnForObjects("*"),
 				],
-				conditions: {
-					Bool: { "aws:SecureTransport": "false" },
-				},
-				principals: [new iam.AnyPrincipal()],
-			}),
-		)
-
-		clientBucket.addToResourcePolicy(
-			new iam.PolicyStatement({
-				effect: iam.Effect.DENY,
-				actions: ["s3:*"],
-				resources: [clientBucket.bucketArn, clientBucket.arnForObjects("*")],
 				conditions: {
 					Bool: { "aws:SecureTransport": "false" },
 				},
@@ -255,6 +255,25 @@ export class CdkStack extends Stack {
 				queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
 			},
 		)
+
+		// New origin access identities
+
+		// Client OAI
+		const clientOai = new cloudfront.OriginAccessIdentity(this, "client-oai", {
+			comment: `${props.subDomain}-${props.environmentName}-client-oai`,
+		})
+
+		// Static Images OAI
+		const staticImagesOai = new cloudfront.OriginAccessIdentity(
+			this,
+			"static-images-oai",
+			{
+				comment: `${props.subDomain}-${props.environmentName}-static-images-oai`,
+			},
+		)
+
+		clientBucket.grantRead(clientOai)
+		staticImagesBucket.grantRead(staticImagesOai)
 
 		// ----------------------------------
 		// Lambda bundling
@@ -499,7 +518,12 @@ export class CdkStack extends Stack {
 			"client-distribution",
 			{
 				defaultBehavior: {
-					origin: new origins.S3BucketOrigin(clientBucket),
+					origin: origins.S3BucketOrigin.withOriginAccessIdentity(
+						clientBucket,
+						{
+							originAccessIdentity: clientOai,
+						},
+					),
 					viewerProtocolPolicy:
 						cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
 					originRequestPolicy: clientQueryPolicy,
@@ -563,7 +587,12 @@ export class CdkStack extends Stack {
 			"static-images-distribution",
 			{
 				defaultBehavior: {
-					origin: new origins.S3BucketOrigin(staticImagesBucket),
+					origin: origins.S3BucketOrigin.withOriginAccessIdentity(
+						staticImagesBucket,
+						{
+							originAccessIdentity: staticImagesOai,
+						},
+					),
 					viewerProtocolPolicy:
 						cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
 					functionAssociations: [
