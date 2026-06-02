@@ -17,6 +17,8 @@ import * as route53 from 'aws-cdk-lib/aws-route53'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs'
 import * as apigw from 'aws-cdk-lib/aws-apigateway'
+import * as logs from 'aws-cdk-lib/aws-logs'
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 
 
@@ -156,6 +158,21 @@ export class CdkStack extends Stack {
     // ----------------------------------
     // S3 buckets
     // ----------------------------------
+
+    const cloudFrontLogsBucket = new s3.Bucket(this, 'cloudfront-logs-bucket', {
+      bucketName: `${props.subDomain}-${props.environmentName}-cloudfront-logs`,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      enforceSSL: true,
+      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: isDev,
+      lifecycleRules: [
+        {
+          expiration: isProd ? cdk.Duration.days(180) : cdk.Duration.days(30)
+        }
+      ]
+    })
 
     const staticImagesBucket = new s3.Bucket(this, 'static-images', {
       bucketName: `${props.subDomain}-${props.environmentName}-static-images`,
@@ -395,15 +412,62 @@ export class CdkStack extends Stack {
     // Allow it to upload objects to the static images bucket
     staticImagesBucket.grantPut(getImageUploadUrlLambda)
 
+    const monitoredLambdas = [
+      healthcheckLambda,
+      postProductLambda,
+      deleteProductLambda,
+      productCatalogLambda,
+      postUsersLambda,
+      loginLambda,
+      postToCartLambda,
+      getToCartLambda,
+      deleteFromCartLambda,
+      getImageUploadUrlLambda
+    ]
+
+    monitoredLambdas.forEach((fn) => {
+      new cloudwatch.Alarm(this, `${fn.node.id}-errors-alarm`, {
+        alarmName: `${fn.functionName}-errors`,
+        metric: fn.metricErrors({
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5)
+        }),
+        threshold: isProd ? 1 : 5,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        alarmDescription: `Triggers when ${fn.functionName} records Lambda errors.`
+      })
+
+      new cloudwatch.Alarm(this, `${fn.node.id}-duration-alarm`, {
+        alarmName: `${fn.functionName}-duration`,
+        metric: fn.metricDuration({
+          statistic: 'Average',
+          period: cdk.Duration.minutes(5)
+        }),
+        threshold: isProd ? 5000 : 10000,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        alarmDescription: `Triggers when ${fn.functionName} average duration is too high.`
+      })
+    })
+
     // ----------------------------------
     // API Gateway
     // ----------------------------------
+    const apiAccessLogGroup = new logs.LogGroup(this, 'api-access-logs', {
+      logGroupName: `/aws/apigateway/${props.subDomain}-${props.environmentName}-api-access-logs`,
+      retention: isProd ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_MONTH,
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY
+    })
+
     const api = new apigw.RestApi(this, 'apigw', {
       restApiName: `${props.subDomain}-${props.environmentName}-api`,
       description: `${props.subDomain} api gateway`,
       deploy: true,
       deployOptions: {
-        stageName: 'api'
+        stageName: 'api',
+        metricsEnabled: true,
+        tracingEnabled: true
       },
       defaultCorsPreflightOptions: {
         allowHeaders: [
@@ -422,6 +486,18 @@ export class CdkStack extends Stack {
         rateLimit: 10,
         burstLimit: 5
       }
+    })
+
+    new cloudwatch.Alarm(this, 'api-gateway-5xx-alarm', {
+      alarmName: `${props.subDomain}-${props.environmentName}-api-gateway-5xx-errors`,
+      metric: api.metricServerError({
+        statistic: 'Sum',
+        period: cdk.Duration.minutes(5)
+      }),
+      threshold: isProd ? 5 : 10,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      alarmDescription: 'Triggers when API Gateway returns too many 5XX server errors.'
     })
 
     // Expose endpoint `/api/healthcheck`
@@ -491,6 +567,9 @@ export class CdkStack extends Stack {
         }
       ],
       defaultRootObject: 'index.html',
+      enableLogging: true,
+      logBucket: cloudFrontLogsBucket,
+      logFilePrefix: `${props.environmentName}/client/`,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       domainNames: [fullDomain],
       certificate: cert,
@@ -521,6 +600,9 @@ export class CdkStack extends Stack {
           }
         ]
       },
+      enableLogging: true,
+      logBucket: cloudFrontLogsBucket,
+      logFilePrefix: `${props.environmentName}/static-images/`,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       domainNames: [staticImagesInS3Domain],
       certificate: cert,
