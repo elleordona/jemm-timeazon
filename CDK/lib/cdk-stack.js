@@ -17,6 +17,7 @@ import * as route53 from 'aws-cdk-lib/aws-route53'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs'
 import * as apigw from 'aws-cdk-lib/aws-apigateway'
+import * as logs from 'aws-cdk-lib/aws-logs'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 
 
@@ -399,12 +400,33 @@ export class CdkStack extends Stack {
     // ----------------------------------
     // API Gateway
     // ----------------------------------
+    const apiAccessLogGroup = new logs.LogGroup(this, 'api-access-logs', {
+      logGroupName: `/aws/apigateway/${props.subDomain}-${props.environmentName}-api-access-logs`,
+      retention: isProd ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_MONTH,
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY
+    })
+
     const api = new apigw.RestApi(this, 'apigw', {
       restApiName: `${props.subDomain}-${props.environmentName}-api`,
       description: `${props.subDomain} api gateway`,
       deploy: true,
       deployOptions: {
-        stageName: 'api'
+        stageName: 'api',
+        accessLogDestination: new apigw.LogGroupLogDestination(apiAccessLogGroup),
+        accessLogFormat: apigw.AccessLogFormat.jsonWithStandardFields({
+          caller: true,
+          httpMethod: true,
+          ip: true,
+          protocol: true,
+          requestTime: true,
+          resourcePath: true,
+          responseLength: true,
+          status: true,
+          user: true
+        }),
+        loggingLevel: apigw.MethodLoggingLevel.INFO,
+        metricsEnabled: true,
+        tracingEnabled: true
       },
       defaultCorsPreflightOptions: {
         allowHeaders: [
