@@ -18,6 +18,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs'
 import * as apigw from 'aws-cdk-lib/aws-apigateway'
 import * as logs from 'aws-cdk-lib/aws-logs'
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 
 
@@ -412,6 +413,45 @@ export class CdkStack extends Stack {
     // Allow it to upload objects to the static images bucket
     staticImagesBucket.grantPut(getImageUploadUrlLambda)
 
+    const monitoredLambdas = [
+      healthcheckLambda,
+      postProductLambda,
+      deleteProductLambda,
+      productCatalogLambda,
+      postUsersLambda,
+      loginLambda,
+      postToCartLambda,
+      getToCartLambda,
+      deleteFromCartLambda,
+      getImageUploadUrlLambda
+    ]
+
+    monitoredLambdas.forEach((fn) => {
+      new cloudwatch.Alarm(this, `${fn.node.id}-errors-alarm`, {
+        alarmName: `${fn.functionName}-errors`,
+        metric: fn.metricErrors({
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5)
+        }),
+        threshold: isProd ? 1 : 5,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        alarmDescription: `Triggers when ${fn.functionName} records Lambda errors.`
+      })
+
+      new cloudwatch.Alarm(this, `${fn.node.id}-duration-alarm`, {
+        alarmName: `${fn.functionName}-duration`,
+        metric: fn.metricDuration({
+          statistic: 'Average',
+          period: cdk.Duration.minutes(5)
+        }),
+        threshold: isProd ? 5000 : 10000,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        alarmDescription: `Triggers when ${fn.functionName} average duration is too high.`
+      })
+    })
+
     // ----------------------------------
     // API Gateway
     // ----------------------------------
@@ -462,6 +502,18 @@ export class CdkStack extends Stack {
         rateLimit: 10,
         burstLimit: 5
       }
+    })
+
+    new cloudwatch.Alarm(this, 'api-gateway-5xx-alarm', {
+      alarmName: `${props.subDomain}-${props.environmentName}-api-gateway-5xx-errors`,
+      metric: api.metricServerError({
+        statistic: 'Sum',
+        period: cdk.Duration.minutes(5)
+      }),
+      threshold: isProd ? 5 : 10,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      alarmDescription: 'Triggers when API Gateway returns too many 5XX server errors.'
     })
 
     // Expose endpoint `/api/healthcheck`
