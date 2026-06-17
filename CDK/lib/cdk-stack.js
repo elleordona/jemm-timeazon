@@ -322,58 +322,58 @@ export class CdkStack extends Stack {
 		// ----------------------------------
 
 		const bootstrapLambda = new lambda.Function(this, "bootstrap-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-bootstrap-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "utility-functions.bootstrapHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'addToCart.js', 'health-check.js']
-    }),
-    environment: lambdaEnvVars,
-})
+			functionName: `${props.subDomain}-${props.environmentName}-bootstrap-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "utility-functions.bootstrapHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'addToCart.js', 'health-check.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-const healthcheckLambda = new lambda.Function(this, "health-check-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-health-check-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "health-check.healthcheckHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'addToCart.js', 'utility-functions.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		const healthcheckLambda = new lambda.Function(this, "health-check-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-health-check-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "health-check.healthcheckHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'addToCart.js', 'utility-functions.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-const postProductLambda = new lambda.Function(this, "post-product-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-post-product-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "utility-functions.postProductHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'addToCart.js', 'health-check.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		const postProductLambda = new lambda.Function(this, "post-product-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-post-product-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "utility-functions.postProductHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'addToCart.js', 'health-check.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-const deleteProductLambda = new lambda.Function(this, "delete-product-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-delete-product-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "utility-functions.deleteProductHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'addToCart.js', 'health-check.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		const deleteProductLambda = new lambda.Function(this, "delete-product-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-delete-product-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "utility-functions.deleteProductHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'addToCart.js', 'health-check.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-// product catalogue
-const productCatalogLambda = new lambda.Function(this, "product-catalog-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-product-catalog-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "utility-functions.productCatalogHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'addToCart.js', 'health-check.js']
-    }),
-    environment: {
-        ...lambdaEnvVars,
-        FEATURED_PRODUCT: "",
-    },
-})
+		// product catalogue
+		const productCatalogLambda = new lambda.Function(this, "product-catalog-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-product-catalog-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "utility-functions.productCatalogHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'addToCart.js', 'health-check.js']
+			}),
+			environment: {
+				...lambdaEnvVars,
+				FEATURED_PRODUCT: "",
+			},
+		})
 
 		// Grant Lambdas that need it access to the Aurora Data API
 
@@ -385,55 +385,55 @@ const productCatalogLambda = new lambda.Function(this, "product-catalog-lambda",
 		// Sign up, log in and add to cart lambdas that will use DynamoDB
 		// sign up
 		const postUsersLambda = new lambda.Function(this, "post-users-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-post-users-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "users.postUsersHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['addToCart.js', 'health-check.js', 'utility-functions.js']
-    }),
-    environment: lambdaEnvVars,
-})
+			functionName: `${props.subDomain}-${props.environmentName}-post-users-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "users.postUsersHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['addToCart.js', 'health-check.js', 'utility-functions.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-// log in
-const loginLambda = new lambda.Function(this, "login-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-login-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "users.loginHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['addToCart.js', 'health-check.js', 'utility-functions.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		// log in
+		const loginLambda = new lambda.Function(this, "login-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-login-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "users.loginHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['addToCart.js', 'health-check.js', 'utility-functions.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-const postToCartLambda = new lambda.Function(this, "post-tocart-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-post-tocart-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "addToCart.postToCartHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'health-check.js', 'utility-functions.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		const postToCartLambda = new lambda.Function(this, "post-tocart-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-post-tocart-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "addToCart.postToCartHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'health-check.js', 'utility-functions.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-const getToCartLambda = new lambda.Function(this, "get-tocart-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-get-tocart-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "addToCart.getToCartHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'health-check.js', 'utility-functions.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		const getToCartLambda = new lambda.Function(this, "get-tocart-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-get-tocart-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "addToCart.getToCartHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'health-check.js', 'utility-functions.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
-const deleteFromCartLambda = new lambda.Function(this, "delete-fromcart-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-delete-fromcart-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "addToCart.deleteFromCartHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'health-check.js', 'utility-functions.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		const deleteFromCartLambda = new lambda.Function(this, "delete-fromcart-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-delete-fromcart-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "addToCart.deleteFromCartHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'health-check.js', 'utility-functions.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
 		// DynamoDB permissions
 		// Users table
@@ -447,15 +447,15 @@ const deleteFromCartLambda = new lambda.Function(this, "delete-fromcart-lambda",
 
 		// S3 lambda images
 		// New Lambda to create pre signed upload urls
-const getImageUploadUrlLambda = new lambda.Function(this, "get-image-upload-url-lambda", {
-    functionName: `${props.subDomain}-${props.environmentName}-get-image-upload-url-lambda`,
-    runtime: lambda.Runtime.NODEJS_22_X,
-    handler: "utility-functions.getImageUploadUrlHandler",
-    code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-        exclude: ['users.js', 'addToCart.js', 'health-check.js']
-    }),
-    environment: lambdaEnvVars,
-})
+		const getImageUploadUrlLambda = new lambda.Function(this, "get-image-upload-url-lambda", {
+			functionName: `${props.subDomain}-${props.environmentName}-get-image-upload-url-lambda`,
+			runtime: lambda.Runtime.NODEJS_22_X,
+			handler: "utility-functions.getImageUploadUrlHandler",
+			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
+				exclude: ['users.js', 'addToCart.js', 'health-check.js']
+			}),
+			environment: lambdaEnvVars,
+		})
 
 		// Allow it to upload objects to the static images bucket
 		staticImagesBucket.grantPut(getImageUploadUrlLambda)
