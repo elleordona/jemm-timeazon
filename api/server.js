@@ -6,6 +6,7 @@ import cors from 'cors';
 // import controllers
 import { getHealthcheck } from './controllers/healthcheck.controller.js'
 import { getImageUploadUrl } from './controllers/getimageupload.controller.js';
+import { getCart, deleteFromCart } from './controllers/cart.controller.js'
 
 const app = express();
 const port = process.env.PORT
@@ -24,7 +25,9 @@ app.get('/api/healthcheck', getHealthcheck)
 
 //TODO: Login
 
-//TODO: Cart (GET, POST, DELETE)
+// Cart
+app.get('/api/addtocart', getCart)
+app.delete('/api/addtocart', deleteFromCart)
 
 // Image
 app.post('/api/image-upload-url', getImageUploadUrl)
