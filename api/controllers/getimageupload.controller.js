@@ -40,7 +40,7 @@ export const getImageUploadUrl = async (req, res) => {
         })
 
     } catch (e) {
-        console.error(e)
+        console.error("Image Upload Error: ", e)
         return res.status(500).json({
             message: "Could not create upload URL"
         })
