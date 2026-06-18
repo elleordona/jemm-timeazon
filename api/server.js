@@ -7,6 +7,7 @@ import cors from 'cors';
 import { getHealthcheck } from './controllers/healthcheck.controller.js'
 import { getImageUploadUrl } from './controllers/getimageupload.controller.js';
 import { getCart, deleteFromCart } from './controllers/cart.controller.js'
+import { createUser } from './controllers/user.controller.js';
 
 const app = express();
 const port = process.env.PORT
@@ -21,7 +22,8 @@ app.get('/api/healthcheck', getHealthcheck)
 
 //TODO: Products (GET, POST, DELETE)
 
-//TODO: Users
+// Users
+app.post('/api/users', createUser)
 
 //TODO: Login
 
