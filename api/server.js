@@ -20,8 +20,8 @@ app.use(express.json());
 app.get('/api/healthcheck', getHealthcheck)
 
 //TODO: Products (GET, POST, DELETE)
-// app.post('/api/products', postProducts)
-// app.delete('/api/products', deleteProducts)
+app.post('/api/products', postProducts)
+app.delete('/api/products', deleteProducts)
 
 //TODO: Users
 

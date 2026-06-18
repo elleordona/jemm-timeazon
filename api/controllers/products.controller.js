@@ -1,4 +1,5 @@
 // Logic for products API endpoint
+import client from 'data-api-client';
 
 //* Utility functions
 const connection = client({
