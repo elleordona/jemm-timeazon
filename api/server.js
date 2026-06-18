@@ -6,6 +6,7 @@ import cors from 'cors';
 // import controllers
 import { getHealthcheck } from './controllers/healthcheck.controller.js'
 import { getImageUploadUrl } from './controllers/getimageupload.controller.js';
+import { getCart, deleteFromCart } from './controllers/cart.controller.js'
 import { postProduct, deleteProduct } from './controllers/products.controller.js';
 
 const app = express();
@@ -27,7 +28,9 @@ app.delete('/api/products', deleteProducts)
 
 //TODO: Login
 
-//TODO: Cart (GET, POST, DELETE)
+// Cart
+app.get('/api/addtocart', getCart)
+app.delete('/api/addtocart', deleteFromCart)
 
 // Image
 app.post('/api/image-upload-url', getImageUploadUrl)
