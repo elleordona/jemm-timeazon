@@ -21,8 +21,8 @@ app.use(express.json());
 app.get('/api/healthcheck', getHealthcheck)
 
 //TODO: Products (GET, POST, DELETE)
-app.post('/api/products', postProducts)
-app.delete('/api/products', deleteProducts)
+// // app.post('/api/products', postProducts)
+// app.delete('/api/products', deleteProducts)
 
 //TODO: Users
 
@@ -35,7 +35,10 @@ app.delete('/api/addtocart', deleteFromCart)
 // Image
 app.post('/api/image-upload-url', getImageUploadUrl)
 
-const server = app.listen(port, () => {
-    const SERVERPORT = server.address().port
-    console.log(`API is running on port: http://localhost:${SERVERPORT}`)
-})
+export default app
+
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(port, () => {
+        console.log(`API is running on port: http://localhost:${port}`)
+    })
+}
