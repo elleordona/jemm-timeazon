@@ -8,6 +8,7 @@ import { getHealthcheck } from './controllers/healthcheck.controller.js'
 import { getImageUploadUrl } from './controllers/getimageupload.controller.js';
 import { getCart, deleteFromCart } from './controllers/cart.controller.js'
 import { createUser } from './controllers/user.controller.js';
+import { getProducts, postProduct, deleteProduct } from './controllers/products.controller.js';
 
 const app = express();
 const port = process.env.PORT
@@ -20,7 +21,10 @@ app.use(express.json());
 // Healthcheck
 app.get('/api/healthcheck', getHealthcheck)
 
-//TODO: Products (GET, POST, DELETE)
+// Products (GET, POST, DELETE)
+app.get('/api/product', getProducts)
+app.post('/api/product', postProduct)
+app.delete('/api/product', deleteProduct)
 
 // Users
 app.post('/api/users', createUser)
