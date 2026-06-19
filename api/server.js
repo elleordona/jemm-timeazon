@@ -30,7 +30,7 @@ app.delete('/api/product', deleteProduct)
 // Users
 app.post('/api/users', createUser)
 
-//TODO: Login
+// Login
 app.post('/api/login', loginController);
 
 // Cart
@@ -43,5 +43,5 @@ app.post('/api/image-upload-url', getImageUploadUrl)
 
 const server = app.listen(port, () => {
     const SERVERPORT = server.address().port
-    console.log(`API is running on port: http://localhost:${SERVERPORT}`)
+    console.log(`API is running on port: ${SERVERPORT}`)
 })
