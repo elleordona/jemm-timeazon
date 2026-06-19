@@ -6,9 +6,10 @@ import cors from 'cors';
 // import controllers
 import { getHealthcheck } from './controllers/healthcheck.controller.js'
 import { getImageUploadUrl } from './controllers/getimageupload.controller.js';
-import { getCart, deleteFromCart } from './controllers/cart.controller.js'
+import { getCart, deleteFromCart, postToCart } from './controllers/cart.controller.js'
 import { createUser } from './controllers/user.controller.js';
 import { getProducts, postProduct, deleteProduct } from './controllers/products.controller.js';
+import { loginController } from './controllers/login.controller.js';
 
 const app = express();
 const port = process.env.PORT
@@ -30,10 +31,12 @@ app.delete('/api/product', deleteProduct)
 app.post('/api/users', createUser)
 
 //TODO: Login
+app.post('/api/login', loginController);
 
 // Cart
 app.get('/api/addtocart', getCart)
 app.delete('/api/addtocart', deleteFromCart)
+app.post('/api/postToCart', postToCart )
 
 // Image
 app.post('/api/image-upload-url', getImageUploadUrl)
