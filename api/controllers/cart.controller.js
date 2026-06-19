@@ -87,3 +87,54 @@ export const deleteFromCart = async (req, res) => {
     })
   }
 }
+
+export const postToCart = async (req, res) => {
+  try {
+    const { email, productId, quantity } = req.body
+    
+    const normalisedEmail = normaliseEmail(email)
+    const normalisedProductId = normaliseProductId(productId)
+    const normalisedQuantity = normaliseQuantity(quantity)
+
+    //Implements a validation error
+    if (!normalisedEmail || !normalisedProductId) {
+      return res.status(400).json({
+        status: "error",
+        message: "email and productId required"
+      })
+    }
+
+    // Adds an item into DynamoDB
+    // PutCommand: creates a new item or overwrites existing one
+    await ddb.send(
+      new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+          email: normalisedEmail,
+          productId: normalisedProductId,
+          quantity: normalisedQuantity,
+          updatedAt: new Date().toISOString()
+        }
+      })
+    )
+
+    // Will generate a success response
+    return res.status(201).json({
+      status: "ok",
+      message: "Item added to cart successfully",
+      cartItem: {
+        email: normalisedEmail,
+        productId: normalisedProductId,
+        quantity: normalisedQuantity
+      }
+    })
+
+  } catch (error) {
+    console.error("Error in postToCart:", error)
+
+    return res.status(500).json({
+      status: "error",
+      message: "Could not add product to cart"
+    })
+  }
+}
