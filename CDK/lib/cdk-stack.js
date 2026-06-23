@@ -20,6 +20,7 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway'
 import * as logs from 'aws-cdk-lib/aws-logs'
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2'
 
 
 const __filename = fileURLToPath(import.meta.url)
@@ -36,6 +37,7 @@ const __dirname = path.dirname(__filename)
  *  certArn: string,
  *  environmentName: 'dev' | 'prod',
  *  devWebAclArn?: string,
+ *  loadBalancerArn: string,
  * }} CdkStackProps
  */
 
@@ -331,267 +333,20 @@ export class CdkStack extends Stack {
 			environment: lambdaEnvVars,
 		})
 
-		const healthcheckLambda = new lambda.Function(this, "health-check-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-health-check-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "health-check.healthcheckHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'addToCart.js', 'utility-functions.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		const postProductLambda = new lambda.Function(this, "post-product-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-post-product-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "utility-functions.postProductHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'addToCart.js', 'health-check.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		const deleteProductLambda = new lambda.Function(this, "delete-product-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-delete-product-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "utility-functions.deleteProductHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'addToCart.js', 'health-check.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		// product catalogue
-		const productCatalogLambda = new lambda.Function(this, "product-catalog-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-product-catalog-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "utility-functions.productCatalogHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'addToCart.js', 'health-check.js']
-			}),
-			environment: {
-				...lambdaEnvVars,
-				FEATURED_PRODUCT: "",
-			},
-		})
-
-		// Grant Lambdas that need it access to the Aurora Data API
-
-		cluster.grantDataApiAccess(productCatalogLambda)
-		cluster.grantDataApiAccess(postProductLambda)
+		// Allow access to database
 		cluster.grantDataApiAccess(bootstrapLambda)
-		cluster.grantDataApiAccess(deleteProductLambda)
-
-		// Sign up, log in and add to cart lambdas that will use DynamoDB
-		// sign up
-		const postUsersLambda = new lambda.Function(this, "post-users-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-post-users-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "users.postUsersHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['addToCart.js', 'health-check.js', 'utility-functions.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		// log in
-		const loginLambda = new lambda.Function(this, "login-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-login-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "users.loginHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['addToCart.js', 'health-check.js', 'utility-functions.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		const postToCartLambda = new lambda.Function(this, "post-tocart-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-post-tocart-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "addToCart.postToCartHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'health-check.js', 'utility-functions.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		const getToCartLambda = new lambda.Function(this, "get-tocart-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-get-tocart-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "addToCart.getToCartHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'health-check.js', 'utility-functions.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		const deleteFromCartLambda = new lambda.Function(this, "delete-fromcart-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-delete-fromcart-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "addToCart.deleteFromCartHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'health-check.js', 'utility-functions.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		// DynamoDB permissions
-		// Users table
-		usersTable.grantReadWriteData(postUsersLambda)
-		usersTable.grantReadData(loginLambda)
-
-		// Cart table
-		cartTable.grantReadWriteData(postToCartLambda)
-		cartTable.grantReadWriteData(getToCartLambda)
-		cartTable.grantReadWriteData(deleteFromCartLambda)
-
-		// S3 lambda images
-		// New Lambda to create pre signed upload urls
-		const getImageUploadUrlLambda = new lambda.Function(this, "get-image-upload-url-lambda", {
-			functionName: `${props.subDomain}-${props.environmentName}-get-image-upload-url-lambda`,
-			runtime: lambda.Runtime.NODEJS_22_X,
-			handler: "utility-functions.getImageUploadUrlHandler",
-			code: lambda.Code.fromAsset(join(__dirname, '../functions'), {
-				exclude: ['users.js', 'addToCart.js', 'health-check.js']
-			}),
-			environment: lambdaEnvVars,
-		})
-
-		// Allow it to upload objects to the static images bucket
-		staticImagesBucket.grantPut(getImageUploadUrlLambda)
-
-		const monitoredLambdas = [
-			healthcheckLambda,
-			postProductLambda,
-			deleteProductLambda,
-			productCatalogLambda,
-			postUsersLambda,
-			loginLambda,
-			postToCartLambda,
-			getToCartLambda,
-			deleteFromCartLambda,
-			getImageUploadUrlLambda
-		]
-
-		monitoredLambdas.forEach((fn) => {
-			new cloudwatch.Alarm(this, `${fn.node.id}-errors-alarm`, {
-				alarmName: `${fn.functionName}-errors`,
-				metric: fn.metricErrors({
-					statistic: 'Sum',
-					period: cdk.Duration.minutes(5)
-				}),
-				threshold: isProd ? 1 : 5,
-				evaluationPeriods: 1,
-				comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-				alarmDescription: `Triggers when ${fn.functionName} records Lambda errors.`
-			})
-
-			new cloudwatch.Alarm(this, `${fn.node.id}-duration-alarm`, {
-				alarmName: `${fn.functionName}-duration`,
-				metric: fn.metricDuration({
-					statistic: 'Average',
-					period: cdk.Duration.minutes(5)
-				}),
-				threshold: isProd ? 5000 : 10000,
-				evaluationPeriods: 1,
-				comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-				alarmDescription: `Triggers when ${fn.functionName} average duration is too high.`
-			})
-		})
 
 		// ----------------------------------
-		// API Gateway
+		// Application Load Balancer
 		// ----------------------------------
-		const apiAccessLogGroup = new logs.LogGroup(this, 'api-access-logs', {
-			logGroupName: `/aws/apigateway/${props.subDomain}-${props.environmentName}-api-access-logs`,
-			retention: isProd ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_MONTH,
-			removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY
-		})
 
-		const api = new apigw.RestApi(this, 'apigw', {
-			restApiName: `${props.subDomain}-${props.environmentName}-api`,
-			description: `${props.subDomain} api gateway`,
-			deploy: true,
-			deployOptions: {
-				stageName: 'api',
-				metricsEnabled: true,
-				tracingEnabled: true
-			},
-			defaultCorsPreflightOptions: {
-				allowHeaders: [
-					'Content-Type',
-					'Authorization'
-				],
-				allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-				allowOrigins: [`https://${fullDomain}`],
-				allowCredentials: false
+		// Grab existing LB from aws
+		const loadBalancer = elbv2.ApplicationLoadBalancer.fromLookup(
+			this,
+			'ALB',
+			{
+				loadBalancerArn: props.loadBalancerArn
 			}
-		})
-
-		api.addUsagePlan('apigw-rate-limits', {
-			name: `${props.subDomain}-apigw-rate-limits`,
-			throttle: {
-				rateLimit: 10,
-				burstLimit: 5
-			}
-		})
-
-		new cloudwatch.Alarm(this, 'api-gateway-5xx-alarm', {
-			alarmName: `${props.subDomain}-${props.environmentName}-api-gateway-5xx-errors`,
-			metric: api.metricServerError({
-				statistic: 'Sum',
-				period: cdk.Duration.minutes(5)
-			}),
-			threshold: isProd ? 5 : 10,
-			evaluationPeriods: 1,
-			comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-			alarmDescription: 'Triggers when API Gateway returns too many 5XX server errors.'
-		})
-
-		// Expose endpoint `/api/healthcheck`
-		const healthchckApi = api.root.addResource("healthcheck")
-		// Allow `/api/healthcheck` to receive GET requests, and tell it which lambder to trigger whn it does
-		healthchckApi.addMethod(
-			"GET",
-			new apigw.LambdaIntegration(healthcheckLambda),
-		)
-
-		const productsApi = api.root.addResource("products")
-		productsApi.addMethod(
-			"GET",
-			new apigw.LambdaIntegration(productCatalogLambda),
-		)
-		productsApi.addMethod(
-			"POST",
-			new apigw.LambdaIntegration(postProductLambda),
-		)
-		productsApi.addMethod(
-			"DELETE",
-			new apigw.LambdaIntegration(deleteProductLambda),
-		)
-
-		const usersApi = api.root.addResource("users")
-		usersApi.addMethod("POST", new apigw.LambdaIntegration(postUsersLambda))
-
-		const loginApi = api.root.addResource("login")
-		loginApi.addMethod("POST", new apigw.LambdaIntegration(loginLambda))
-
-		const addToCartApi = api.root.addResource("addtocart")
-		addToCartApi.addMethod("GET", new apigw.LambdaIntegration(getToCartLambda))
-		addToCartApi.addMethod(
-			"POST",
-			new apigw.LambdaIntegration(postToCartLambda),
-		)
-		addToCartApi.addMethod(
-			"DELETE",
-			new apigw.LambdaIntegration(deleteFromCartLambda),
-		)
-
-		// POST /image-upload-url
-		const imageUploadUrlApi = api.root.addResource("image-upload-url")
-		imageUploadUrlApi.addMethod(
-			"POST",
-			new apigw.LambdaIntegration(getImageUploadUrlLambda),
 		)
 
 		// ----------------------------------
@@ -621,9 +376,9 @@ export class CdkStack extends Stack {
 				},
 				additionalBehaviors: {
 					"/api/*": {
-						origin: new origins.HttpOrigin(
-							`${api.restApiId}.execute-api.${props.env.region}.amazonaws.com`,
-						),
+						origin: new origins.LoadBalancerV2Origin(loadBalancer, {
+							protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY
+						}),
 						viewerProtocolPolicy:
 							cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
 						allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
@@ -760,21 +515,21 @@ export class CdkStack extends Stack {
 		// 02 – API Endpoints (What devs test)
 		// --------------------------------------------------
 
-		new cdk.CfnOutput(this, "02_Api_Healthcheck_ViaCloudFront", {
-			value: `https://${fullDomain}/api/healthcheck`,
-		})
+		// new cdk.CfnOutput(this, "02_Api_Healthcheck_ViaCloudFront", {
+		// 	value: `https://${fullDomain}/api/healthcheck`,
+		// })
 
-		new cdk.CfnOutput(this, "02_Api_Healthcheck_DirectApiGateway", {
-			value: `https://${api.restApiId}.execute-api.${props.env.region}.amazonaws.com/api/healthcheck`,
-		})
+		// new cdk.CfnOutput(this, "02_Api_Healthcheck_DirectApiGateway", {
+		// 	value: `https://${api.restApiId}.execute-api.${props.env.region}.amazonaws.com/api/healthcheck`,
+		// })
 
-		new cdk.CfnOutput(this, "productCatalogLambda_ViaCloudFront", {
-			value: `https://${fullDomain}/api/products`,
-		})
+		// new cdk.CfnOutput(this, "productCatalogLambda_ViaCloudFront", {
+		// 	value: `https://${fullDomain}/api/products`,
+		// })
 
-		new cdk.CfnOutput(this, "productCatalolgLambda_DirectApiGateway", {
-			value: `https://${api.restApiId}.execute-api.${props.env.region}.amazonaws.com/api/products`,
-		})
+		// new cdk.CfnOutput(this, "productCatalolgLambda_DirectApiGateway", {
+		// 	value: `https://${api.restApiId}.execute-api.${props.env.region}.amazonaws.com/api/products`,
+		// })
 
 		// --------------------------------------------------
 		// 03 – CloudFront (Debugging + invalidations)
@@ -812,9 +567,9 @@ export class CdkStack extends Stack {
 		// 05 – Compute (Lambdas)
 		// --------------------------------------------------
 
-		new cdk.CfnOutput(this, "05_Lambda_HealthcheckFunctionName", {
-			value: healthcheckLambda.functionName,
-		})
+		// new cdk.CfnOutput(this, "05_Lambda_HealthcheckFunctionName", {
+		// 	value: healthcheckLambda.functionName,
+		// })
 
 		// --------------------------------------------------
 		// 06 – Database (Aurora Serverless v2)

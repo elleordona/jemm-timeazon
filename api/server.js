@@ -23,9 +23,9 @@ app.use(express.json());
 app.get('/api/healthcheck', getHealthcheck)
 
 // Products (GET, POST, DELETE)
-app.get('/api/product', getProducts)
-app.post('/api/product', postProduct)
-app.delete('/api/product', deleteProduct)
+app.get('/api/products', getProducts)
+app.post('/api/products', postProduct)
+app.delete('/api/products/:id', deleteProduct)
 
 // Users
 app.post('/api/users', createUser)
@@ -36,7 +36,7 @@ app.post('/api/login', loginController);
 // Cart
 app.get('/api/addtocart', getCart)
 app.delete('/api/addtocart', deleteFromCart)
-app.post('/api/postToCart', postToCart )
+app.post('/api/addToCart', postToCart )
 
 // Image
 app.post('/api/image-upload-url', getImageUploadUrl)
