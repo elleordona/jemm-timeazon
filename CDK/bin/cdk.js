@@ -28,6 +28,7 @@ const settings = {
   dbName: 'dev',
   vpcName: 'CTASharedVPC-vpc',
   devWebAclArn: 'arn:aws:wafv2:us-east-1:827602716979:global/webacl/JEMM-timeazon-dev-waf/89ef8a72-3779-43c4-8428-6d933fbed647',
+  loadBalancerArn: 'arn:aws:elasticloadbalancing:eu-west-2:827602716979:loadbalancer/app/JEMM-timeazon-ALB/5b6fdaf0e98fa285',
   environmentName
 }
 
@@ -43,6 +44,7 @@ if (environmentName === 'dev') {
     dbName: settings.dbName,
     vpcName: settings.vpcName,
     devWebAclArn: settings.devWebAclArn,
+    loadBalancerArn: settings.loadBalancerArn,
     environmentName: 'dev'
   });
 }
@@ -58,6 +60,7 @@ if (environmentName === 'prod') {
     dbName: settings.dbName,
     vpcName: settings.vpcName,
     devWebAclArn: undefined,
+    loadBalancerArn: settings.loadBalancerArn,
     environmentName: 'prod'
   });
 }
