@@ -91,10 +91,9 @@ export const deleteFromCart = async (req, res) => {
 export const postToCart = async (req, res) => {
   try {
     const { email, productId, quantity } = req.body
-    
+
     const normalisedEmail = normaliseEmail(email)
     const normalisedProductId = normaliseProductId(productId)
-    const normalisedQuantity = normaliseQuantity(quantity)
 
     //Implements a validation error
     if (!normalisedEmail || !normalisedProductId) {
@@ -112,7 +111,6 @@ export const postToCart = async (req, res) => {
         Item: {
           email: normalisedEmail,
           productId: normalisedProductId,
-          quantity: normalisedQuantity,
           updatedAt: new Date().toISOString()
         }
       })
@@ -124,8 +122,7 @@ export const postToCart = async (req, res) => {
       message: "Item added to cart successfully",
       cartItem: {
         email: normalisedEmail,
-        productId: normalisedProductId,
-        quantity: normalisedQuantity
+        productId: normalisedProductId
       }
     })
 
