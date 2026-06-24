@@ -69,7 +69,7 @@ export const postProduct = async (req, res) => {
 // DELETE products
 export const deleteProduct = async (req, res) => {
     try {
-        const id = req.params;
+        const id = req.params.id;
 
         if (!id) {
             return res.status(400).json({
@@ -79,7 +79,7 @@ export const deleteProduct = async (req, res) => {
         };
 
         const deleteSQL = `
-            DELETE FROM product
+            DELETE FROM products
             WHERE id = :id
             RETURNING id, name, description, price_credit, image_url, era
             `;
