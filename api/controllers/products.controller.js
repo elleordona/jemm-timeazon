@@ -69,7 +69,7 @@ export const postProduct = async (req, res) => {
 // DELETE products
 export const deleteProduct = async (req, res) => {
     try {
-        const id = req.params.id;
+        const id = parseInt(req.params.id, 10);
 
         if (!id) {
             return res.status(400).json({
